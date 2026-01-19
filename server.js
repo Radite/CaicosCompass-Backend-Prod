@@ -30,8 +30,9 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
   ? [
       process.env.FRONTEND_URL,
       'https://caicoscompass.com',
-      'https://www.caicoscompass.com'
-    ]
+      'https://www.caicoscompass.com',
+      'https://caicoscompass-prod-frontend.netlify.app', // ✅ add this
+    ].filter(Boolean)
   : [
       'http://localhost:3000',
       'http://localhost:3001'

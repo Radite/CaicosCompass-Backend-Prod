@@ -523,47 +523,46 @@ exports.resendVerificationEmail = async (req, res) => {
 
 exports.loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
+      return res.status(400).json({ message: "All fields are required" });
     }
+
+    email = email.trim().toLowerCase();
+    password = String(password);
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: 'Invalid email or password' });
+      return res.status(400).json({ message: "Invalid email or password" });
     }
 
     if (!user.isVerified) {
-      return res.status(403).json({ message: 'Please verify your email before logging in.' });
+      return res.status(403).json({ message: "Please verify your email before logging in." });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: "Invalid email or password" });
+      // (optional) keep message same to avoid leaking info
     }
 
-    console.log("User found:", user.email); // Debugging
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
-    // Generate JWT Access Token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-    console.log("Generated Token:", token); // 🔥 Check if token is generated
-
-res.status(200).json({
-  success: true,
-  token,
-  user: {
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    businessProfile: user.businessProfile, // Include for frontend routing
-  },
-});
+    return res.status(200).json({
+      success: true,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        businessProfile: user.businessProfile,
+      },
+    });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 

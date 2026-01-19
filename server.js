@@ -54,6 +54,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+app.options('*', cors());
 app.use('/api/payments', require('./routes/paymentRoutes'));
 
 app.use(express.json({ limit: '50mb' })); // Increase from default 100kb

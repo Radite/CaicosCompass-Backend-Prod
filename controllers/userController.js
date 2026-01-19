@@ -525,29 +525,63 @@ exports.loginUser = async (req, res) => {
   try {
     let { email, password } = req.body;
 
+    console.log("=== LOGIN ATTEMPT ===");
+
+    // 1️⃣ Log raw inputs (safe info only)
+    console.log("RAW email:", email);
+    console.log("RAW email length:", email?.length);
+    console.log("RAW password length:", password?.length);
+
     if (!email || !password) {
+      console.log("❌ Missing email or password");
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    email = email.trim().toLowerCase();
-    password = String(password);
+    // 2️⃣ Normalize email
+    const emailNorm = email.trim().toLowerCase();
+    console.log("NORMALIZED email:", emailNorm);
 
-    const user = await User.findOne({ email });
+    // 3️⃣ Lookup user
+    const user = await User.findOne({ email: emailNorm });
+
+    console.log("USER FOUND:", !!user);
+
     if (!user) {
+      console.log("❌ No user found for email:", emailNorm);
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
+    // 4️⃣ Log user metadata (safe fields only)
+    console.log("USER email in DB:", user.email);
+    console.log("USER isVerified:", user.isVerified);
+    console.log("USER password hash exists:", !!user.password);
+    console.log("USER password hash prefix:", user.password?.substring(0, 4)); // $2a$ / $2b$
+
     if (!user.isVerified) {
+      console.log("❌ User not verified");
       return res.status(403).json({ message: "Please verify your email before logging in." });
     }
 
+    // 5️⃣ Compare password
     const isMatch = await bcrypt.compare(password, user.password);
+
+    console.log("PASSWORD MATCH RESULT:", isMatch);
+
     if (!isMatch) {
+      console.log("❌ Password mismatch for:", emailNorm);
       return res.status(400).json({ message: "Invalid email or password" });
-      // (optional) keep message same to avoid leaking info
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    // 6️⃣ Successful login
+    console.log("✅ LOGIN SUCCESS for:", user.email);
+
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    console.log("JWT GENERATED:", !!token);
 
     return res.status(200).json({
       success: true,
@@ -560,11 +594,13 @@ exports.loginUser = async (req, res) => {
         businessProfile: user.businessProfile,
       },
     });
+
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("🔥 LOGIN ERROR:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 
